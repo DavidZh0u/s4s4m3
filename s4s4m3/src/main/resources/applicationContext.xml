@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+    http://www.springframework.org/schema/aop 
+    http://www.springframework.org/schema/aop/spring-aop-3.0.xsd 
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-4.2.xsd">
+    
+    
+     <!-- \u5F00\u542F\u81EA\u52A8\u626B\u5305 -->
+     <context:component-scan base-package="com.tohours.s4s4m3">
+       <!--\u5236\u5B9A\u626B\u5305\u89C4\u5219\uFF0C\u4E0D\u626B\u63CF@Controller\u6CE8\u89E3\u7684JAVA\u7C7B\uFF0C\u5176\u4ED6\u7684\u8FD8\u662F\u8981\u626B\u63CF  -->
+         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+     </context:component-scan>
+    
+    <!-- \u542F\u52A8AOP\u652F\u6301 -->
+    <aop:aspectj-autoproxy/>
+    
+    <!-- \u5F15\u5165\u5916\u90E8\u6570\u636E\u6E90\u914D\u7F6E\u4FE1\u606F -->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <value>classpath:datasource.properties</value>
+        </property>
+    </bean>
+    
+    <!-- \u914D\u7F6E\u6570\u636E\u6E90 -->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"></property>
+        <property name="url" value="${jdbc.url}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+    </bean>
+    
+    
+    <!-- \u914D\u7F6ESession\u5DE5\u5382 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"></property>
+        <!-- \u52A0\u8F7Dmybatis.cfg.xml\u6587\u4EF6 -->
+        <property name="configLocation" value="classpath:mybatis.cfg.xml"></property>
+        <!-- \u81EA\u52A8\u626B\u63CF\u9700\u8981\u5B9A\u4E49\u7C7B\u522B\u540D\u7684\u5305\uFF0C\u5C06\u5305\u5185\u7684JAVA\u7C7B\u7684\u7C7B\u540D\u4F5C\u4E3A\u7C7B\u522B\u540D -->
+        <property name="typeAliasesPackage" value="com.tohours.s4s4m3.beans"></property>
+    </bean>
+    
+    <!-- \u81EA\u52A8\u626B\u63CF\u6240\u6709\u7684Mapper\u63A5\u53E3\u4E0E\u6587\u4EF6 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.tohours.s4s4m3.mapper"></property>
+    </bean>
+    
+    <!-- \u914D\u7F6E\u4E8B\u52A1\u7BA1\u7406\u5668 -->
+    <bean id="txManager"
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    
+    <!-- \u5B9A\u4E49\u4E2A\u901A\u77E5\uFF0C\u6307\u5B9A\u4E8B\u52A1\u7BA1\u7406\u5668 -->
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="delete*" propagation="REQUIRED" read-only="false"
+                rollback-for="java.lang.Exception" />
+            <tx:method name="save*" propagation="REQUIRED" read-only="false"
+                rollback-for="java.lang.Exception" />
+            <tx:method name="insert*" propagation="REQUIRED" read-only="false"
+                rollback-for="java.lang.Exception" />
+            <tx:method name="update*" propagation="REQUIRED" read-only="false"
+                rollback-for="java.lang.Exception" />
+            <tx:method name="load*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="search*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="select*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="get*" propagation="SUPPORTS" read-only="true"/>
+        </tx:attributes>
+    </tx:advice>
+    
+    <aop:config>
+        <!-- \u914D\u7F6E\u4E00\u4E2A\u5207\u5165\u70B9 -->
+        <aop:pointcut id="serviceMethods" expression="execution(* com.tohours.s4s4m3.service.impl.*ServiceImpl.*(..))" />
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="serviceMethods" />
+    </aop:config>
+    
+</beans>
